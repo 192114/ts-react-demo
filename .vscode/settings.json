@@ -1,12 +1,22 @@
 {
-  // 指定哪些文件不参与搜索
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "typescript.tsdk": "./node_modules/typescript/lib",
+
   "search.exclude": {
     "**/node_modules": true,
     "dist": true,
     "yarn.lock": true
   },
-  // prettier 格式化
+
   "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    "source.fixAll.stylelint": true
+  },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
@@ -36,22 +46,5 @@
   },
   "[scss]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  // eslin 格式化
-  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
-  "typescript.tsdk": "./node_modules/typescript/lib", // 代替 vscode 的 ts 语法智能提示
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
-  },
-
-  // 使用 stylelint 自身的校验即可
-  "css.validate": false,
-  "less.validate": false,
-  "scss.validate": false,
-
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true,
-    "source.fixAll.stylelint": true
   }
 }
