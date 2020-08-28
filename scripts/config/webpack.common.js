@@ -1,9 +1,16 @@
 const { resolve } = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const CopyPlugin = require('copy-webpack-plugin') // 复制资源
+const WebpackBar = require('webpackbar') // 打包进度
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin') // ts 打包检测
+const HardSourceWebpackPlugin = require('hard-source-webpack-plugin') // 加快二次打包速度
+const MiniCssExtractPlugin = require('mini-css-extract-plugin') // 单独打包css
+const TerserPlugin = require('terser-webpack-plugin') // 压缩js
+const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin') // 压缩css
 const { PROJECT_PATH, isDev } = require('../constants')
 
 const getCssLoaders = (importLoaders) => [
-  'style-loader',
+  isDev ? 'style-loader' : MiniCssExtractPlugin.loader,
   {
     loader: 'css-loader',
     options: {
@@ -33,16 +40,40 @@ const getCssLoaders = (importLoaders) => [
   },
 ]
 
+const getPluginsByIsDev = () => {
+  return isDev ? [] : [
+    new MiniCssExtractPlugin({
+      filename: 'css/[name].[contenthash:8].css',
+      chunkFilename: 'css/[name].[contenthash:8].css',
+      ignoreOrder: false,
+    })
+  ]
+}
+
 module.exports = {
   entry: {
-    app: resolve(PROJECT_PATH, './src/app.js'),
+    app: resolve(PROJECT_PATH, './src/index.tsx'),
   },
   output: {
     filename: `js/[name]${isDev ? '' : '.[hash:8]'}.js`,
     path: resolve(PROJECT_PATH, './dist'),
   },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js', '.json'],
+    alias: {
+      'Src': resolve(PROJECT_PATH, './src'),
+      'Components': resolve(PROJECT_PATH, './src/components'),
+      'Utils': resolve(PROJECT_PATH, './src/utils'),
+    }
+  },
   module: {
     rules: [
+      {
+        test: /\.(tsx?|js)$/,
+        loader: 'babel-loader',
+        options: { cacheDirectory: true },
+        exclude: /node_modules/,
+      },
       {
         test: /\.css$/,
         use: getCssLoaders(1),
@@ -108,5 +139,49 @@ module.exports = {
           useShortDoctype: true,
         },
     }),
+    new CopyPlugin({
+      patterns: [
+        {
+          context: resolve(PROJECT_PATH, './public'),
+          from: '*',
+          to: resolve(PROJECT_PATH, './dist'),
+          toType: 'dir',
+        },
+      ],
+    }),
+    new WebpackBar({
+      name: isDev ? '正在启动' : '正在打包',
+      color: '#fa8c16',
+    }),
+    new ForkTsCheckerWebpackPlugin({
+      typescript: {
+        configFile: resolve(PROJECT_PATH, './tsconfig.json'),
+      },
+    }),
+    new HardSourceWebpackPlugin(),
+    ...getPluginsByIsDev()
   ],
+
+  externals: {
+    react: 'React',
+    'react-dom': 'ReactDOM',
+  },
+
+  optimization: {
+    minimize: !isDev,
+    minimizer: [
+      !isDev && new TerserPlugin({
+        extractComments: false,
+        terserOptions: {
+          compress: { pure_funcs: ['console.log'] },
+        }
+      }),
+      !isDev && new OptimizeCssAssetsPlugin()
+    ].filter(Boolean),
+
+    splitChunks: {
+      chunks: 'all',
+      name: true,
+    },
+  },
 }
